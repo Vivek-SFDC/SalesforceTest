@@ -1,0 +1,11 @@
+.THIS {
+}
+
+.THIS.totalBalance {
+    float: right;
+}
+
+.THIS.totalDiv {
+    color: black;
+    background-color: blue;
+}

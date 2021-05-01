@@ -1,0 +1,157 @@
+<aura:component controller="CreditorDataController" implements="flexipage:availableForAllPageTypes,flexipage:availableForRecordHome">
+
+    <!-- Init handler -->
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+
+    <!-- Attributes -->
+    <aura:attribute name="creatorDataList" type="Object[]" default="[]"/>
+    <aura:attribute name="selectedDataList" type="Object[]" default="[]"/>
+    <aura:attribute name="selectedRecordCount" type="integer" default="0"
+                    description="selected Records Count"/>
+    <aura:attribute name="totalRecordsCount" type="Integer"/>
+    <aura:attribute name="totalDebt" type="Integer" default="0"/>
+    <aura:attribute name="maxId" type="Integer" default="0"/>
+    <aura:attribute name="debtMap" type="Map"/>
+    <aura:attribute name="isOpen" type="boolean" default="false"/>
+    <aura:attribute name="newDebtObj" type="Object" default="{}"/>
+
+    <aura:if isTrue="{!empty(v.creatorDataList)}">
+        <!--display error message if there is no records available -->
+		<div class="slds-notify slds-notify_alert slds-theme_alert-texture slds-theme_info" role="alert">
+            <span class="slds-assistive-text">error</span>
+            <h2>No record found.</h2>
+        </div>
+        <aura:set attribute="else">
+           <!-- data table start-->  
+            <table class="slds-table slds-table_bordered slds-table_cell-buffer">
+                <thead>
+                    <tr class="slds-text-title_caps">
+					<!--header checkbox for select all-->
+                        <th style="width:3.25rem;" class="slds-text-align_right">
+                            <div class="slds-form-element">
+                                <div class="slds-form-element__control">
+                                    <lightning:input
+                                        disabled="{!empty(v.creatorDataList)}"
+                                        aura:id="selectAllId"
+                                        onchange="{!c.selectAllCheckbox}"
+                                        type="checkbox"
+                                        label=""
+                                        name=""/>
+                                </div>
+                            </div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="Name">Creditor</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="Phone">First Name</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="Type">Last Name</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="Type">Min Pay %</div>
+                        </th>
+                        <th scope="col">
+                            <div class="slds-truncate" title="Type">Balance</div>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <aura:iteration items="{!v.creatorDataList}" var="obj">
+                        <tr>
+                            <th scope="row" class="slds-text-align_right" style="width:3.25rem;">
+                                <div class="slds-form-element">
+                                    <div class="slds-form-element__control">
+                                        <label class="slds-checkbox">
+                                            <lightning:input
+                                                name="{!obj.id}"
+                                                type="checkbox"
+                                                onchange="{!c.selectSingleCheckbox}"
+                                                checked="{!obj.isChecked}"/>
+                                        </label>
+                                    </div>
+                                </div>
+                            </th>
+                            <th scope="row">
+                                <div class="slds-truncate" title="{!obj.creditorName}">
+                                    {!obj.creditorName}
+                                </div>
+                            </th> 
+                            <th scope="row">
+                                <div class="slds-truncate" title="{!obj.firstName}">
+                                    <lightning:formattedText value="{!obj.firstName}"/>
+                                </div>
+                            </th>
+                            <th scope="row">
+                                <div class="slds-truncate" title="{!obj.lastName}">
+                                    <lightning:formattedText value="{!obj.lastName}"/>
+                                </div>
+                            </th>
+                            <th scope="row">
+                                <div class="slds-truncate" title="{!obj.minPaymentPercentage}">
+                                    <lightning:formattedNumber value="{!obj.minPaymentPercentage / 100}" style="percent"/>
+                                </div>
+                            </th>
+                            <th scope="row">
+                                <div class="slds-truncate" title="{!obj.balance}">
+                                    <lightning:formattedNumber maximumFractionDigits="2" value="{!obj.balance}"/>
+                                </div>
+                            </th>
+                        </tr>
+                    </aura:iteration>
+                </tbody>
+            </table>
+            <div>
+                <lightning:button variant="brand" label="Add Debt" title="Add Debt" onclick="{! c.handleAddDebt }" />
+            </div>
+            <div>
+                <lightning:button variant="brand" label="Remove Debt" title="Add Debt" onclick="{! c.handleRemoveDebt }" />
+            </div>
+            <div class="slds-text-title_caps slds-grid slds-gutters totalDiv">
+                <div class="slds-col">
+                    Total :
+                </div>
+                <div class="slds-col totalBalance">
+                    {!v.totalDebt}
+                </div>
+            </div>
+            <div class="slds-text-title_caps">
+                Total row count : {!v.totalRecordsCount} Check row count : {!v.selectedRecordCount}
+            </div>
+            <aura:if isTrue="{!v.isOpen}">
+            
+                <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                    <div class="slds-modal__container">
+                        <header class="slds-modal__header">
+                            <lightning:buttonIcon iconName="utility:close"
+                                                onclick="{! c.closeModel }"
+                                                alternativeText="close"
+                                                variant="bare-inverse"
+                                                class="slds-modal__close"/>
+                            <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Add Debt</h2>
+                        </header>
+                        <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                            <lightning:input name="creditor" value="{! v.newDebtObj.creditorName }" placeholder="" label="Creditor Name" />
+                            <lightning:input name="firstName" value="{! v.newDebtObj.firstName }" placeholder="" label="First Name" />
+                            <lightning:input name="lastName" value="{! v.newDebtObj.lastName }" placeholder="" label="Last Name" />
+                            <lightning:input type="number" name="balance" label="Balance" value="{! v.newDebtObj.balance }"/>
+                        </div>
+                        <footer class="slds-modal__footer">
+                            <lightning:button variant="neutral" 
+                                            label="Cancel"
+                                            title="Cancel"
+                                            onclick="{! c.closeModel }"/>
+                            <lightning:button variant="brand" 
+                                            label="Save"
+                                            title="Save"
+                                            onclick="{! c.saveClose }"/>
+                        </footer>
+                    </div>
+                </section>
+                <div class="slds-backdrop slds-backdrop_open"></div>
+                
+            </aura:if>
+        </aura:set>
+    </aura:if>
+</aura:component>
